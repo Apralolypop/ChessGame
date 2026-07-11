@@ -9,20 +9,9 @@ std::unique_ptr<Piece> board[8][8];
 
 std::vector<int> KingPositionWhite = {0, 4}; // Initial position of the white king
 std::vector<int> KingPositionBlack = {7, 4}; // Initial position of the black king
-/*
 
-What to do right now:
-make gui for this chess game;
-Implement Check mechanics, if the king is checked, he cant move to a square that is attacked by an enemy piece. This will require checking if the king's new position is attacked after a move is made. If it is, the move should be considered illegal.
-
-if your king is being checked, you must protect the king by either moving the king, capturing the attacking piece, or blocking the attack with another piece. If none of these options are available, it is checkmate and the game is over.
-
-En passant mechanics, if a pawn moves two squares forward from its starting position and lands next to an opponent's pawn, the opponent's pawn can capture it as if it had only moved one square forward. This capture must be done immediately on the next move, or the opportunity is lost. This will require tracking the last move made by a pawn and checking if an en passant capture is possible.
-
-check for checks
-check for checkmates
-
-*/
+bool VERBOSE = false;
+std::function<char(bool)> promotionChoiceProvider = nullptr;
 
 Piece::Piece() : type(' '), isWhite(true), isAlive(true), hasMoved(false) {} // Default constructor
 
@@ -113,7 +102,7 @@ bool KingWillBeChecked(int x, int y, int newX, int newY){
 int checkLegal(int x, int y, int newX, int newY){
     if (board[x][y] && board[x][y]->isAlive) {
         if(KingWillBeChecked(x, y, newX, newY)) {
-            std::cout << "Move would put or leave the king in check!" << std::endl;
+            if (VERBOSE) std::cout << "Move would put or leave the king in check!" << std::endl;
             return 0; // Move is illegal because it puts or leaves the king in check
         }
         std::vector<std::vector<int>> legalMoves = board[x][y]->LegalMoves(x, y);
@@ -123,13 +112,15 @@ int checkLegal(int x, int y, int newX, int newY){
                 return 1; // Move is legal
             }
         }
-        for(const auto& move : legalMoves) {
-            std::cout << "Legal move: (" << move[0] << ", " << move[1] << ")" << std::endl;
+        if (VERBOSE) {
+            for(const auto& move : legalMoves) {
+                std::cout << "Legal move: (" << move[0] << ", " << move[1] << ")" << std::endl;
+            }
         }
 
         //Check for castling moves
         if(board[x][y]->type == 'K') {
-            std::cout << "Checking for castling moves..." << std::endl;
+            if (VERBOSE) std::cout << "Checking for castling moves..." << std::endl;
             std::vector<std::vector<int>> castleMoves = getLegalCastleMoves(x, y, legalMoves);
             for (const auto& move : castleMoves) {
                 if (move[0] == newX && move[1] == newY) {
@@ -142,12 +133,12 @@ int checkLegal(int x, int y, int newX, int newY){
 }
 
 bool movePiece(int x, int y, int newX, int newY, bool WhitesTurn){
-    std::cout<<"Attempting to move piece from (" << x << ", " << y << ") to (" << newX << ", " << newY << ")" << std::endl;
+    if (VERBOSE) std::cout<<"Attempting to move piece from (" << x << ", " << y << ") to (" << newX << ", " << newY << ")" << std::endl;
     if (board[x][y] && board[x][y]->isAlive && board[x][y]->isWhite == WhitesTurn) {
         // Placeholder for move validation logic      
         int returnValue = checkLegal(x, y, newX, newY);
         if (returnValue == 0) {
-            std::cout << "Move is not legal!" << std::endl;
+            if (VERBOSE) std::cout << "Move is not legal!" << std::endl;
             return false;
         }
 
@@ -156,14 +147,14 @@ bool movePiece(int x, int y, int newX, int newY, bool WhitesTurn){
                 if(board[newX][newY]->isWhite != board[x][y]->isWhite) {
                     board[newX][newY]->isEaten(); // Capture the piece
                 } else {
-                    std::cout << "Cannot move to a square occupied by your own piece!" << std::endl;
+                    if (VERBOSE) std::cout << "Cannot move to a square occupied by your own piece!" << std::endl;
                     return false;
                 }
             }
         }
 
         if(returnValue == 2) {
-            std::cout << "Performing castling move..." << std::endl;
+            if (VERBOSE) std::cout << "Performing castling move..." << std::endl;
             if(newY == 6) { // Kingside castling
                 board[x][5] = std::move(board[x][7]); // Move rook to f-file
                 board[x][7] = nullptr; // Clear original rook position
@@ -191,10 +182,14 @@ bool movePiece(int x, int y, int newX, int newY, bool WhitesTurn){
         }
 
         if((board[newX][newY]->type == 'P') && board[newX][newY]->isWhite && newX == 7) {
-            std::cout << "White pawn promoted!" << std::endl;
-            char promotionChoice;
-            std::cout << "Choose a piece for promotion (Q, R, B, N): ";
-            std::cin >> promotionChoice;
+            char promotionChoice = 'Q';
+            if (promotionChoiceProvider) {
+                promotionChoice = promotionChoiceProvider(true);
+            } else {
+                std::cout << "White pawn promoted!" << std::endl;
+                std::cout << "Choose a piece for promotion (Q, R, B, N): ";
+                std::cin >> promotionChoice;
+            }
 
             // Promote to the chosen piece
             if (promotionChoice == 'Q') {
@@ -206,14 +201,18 @@ bool movePiece(int x, int y, int newX, int newY, bool WhitesTurn){
             } else if (promotionChoice == 'N') {
                 board[newX][newY] = std::make_unique<Knight>(true);
             } else {
-                std::cout << "Invalid choice! Promoting to Queen by default." << std::endl;
+                if (VERBOSE) std::cout << "Invalid choice! Promoting to Queen by default." << std::endl;
                 board[newX][newY] = std::make_unique<Queen>(true);
             }
         } else if((board[newX][newY]->type == 'P') && !board[newX][newY]->isWhite && newX == 0) {
-            std::cout << "Black pawn promoted!" << std::endl;
-            char promotionChoice;
-            std::cout << "Choose a piece for promotion (Q, R, B, N): ";
-            std::cin >> promotionChoice;
+            char promotionChoice = 'Q';
+            if (promotionChoiceProvider) {
+                promotionChoice = promotionChoiceProvider(false);
+            } else {
+                std::cout << "Black pawn promoted!" << std::endl;
+                std::cout << "Choose a piece for promotion (Q, R, B, N): ";
+                std::cin >> promotionChoice;
+            }
 
             // Promote to the chosen piece
             if (promotionChoice == 'Q') {
@@ -225,7 +224,7 @@ bool movePiece(int x, int y, int newX, int newY, bool WhitesTurn){
             } else if (promotionChoice == 'N') {
                 board[newX][newY] = std::make_unique<Knight>(false);
             } else {
-                std::cout << "Invalid choice! Promoting to Queen by default." << std::endl;
+                if (VERBOSE) std::cout << "Invalid choice! Promoting to Queen by default." << std::endl;
                 board[newX][newY] = std::make_unique<Queen>(false);
             }
         }
@@ -234,7 +233,7 @@ bool movePiece(int x, int y, int newX, int newY, bool WhitesTurn){
         return true;
     }
     else{
-        std::cout << "No piece at the source position! Or wrong color!" << std::endl;
+        if (VERBOSE) std::cout << "No piece at the source position! Or wrong color!" << std::endl;
         return false;
     }
 }
@@ -243,7 +242,7 @@ bool isPieceAt(int x, int y){
     return board[x][y] != nullptr && board[x][y]->isAlive;
 }
 
-std::vector<std::vector<int>> getLegalHorizontalMoves(int x, int y, std::vector<std::vector<int>>& legalMoves) { //This functions adds all the possible horizontalmoves for a piece at position (x, y) to the legalMoves vector
+std::vector<std::vector<int>> getLegalHorizontalMoves(int x, int y, std::vector<std::vector<int>>& legalMoves) {
     // Check left
     for (int j = y - 1; j >= 0; j--) {
         if (isPieceAt(x, j)) {
@@ -267,7 +266,7 @@ std::vector<std::vector<int>> getLegalHorizontalMoves(int x, int y, std::vector<
     return legalMoves;
 }
 
-std::vector<std::vector<int>> getLegalVerticalMoves(int x, int y, std::vector<std::vector<int>>& legalMoves) { //This functions adds all the possible vertical moves for a piece at position (x, y) to the legalMoves vector
+std::vector<std::vector<int>> getLegalVerticalMoves(int x, int y, std::vector<std::vector<int>>& legalMoves) {
     // Check up
     for (int i = x - 1; i >= 0; i--) {
         if (isPieceAt(i, y)) {
@@ -291,7 +290,7 @@ std::vector<std::vector<int>> getLegalVerticalMoves(int x, int y, std::vector<st
     return legalMoves;
 }
 
-std::vector<std::vector<int>> getLegalDiagonalMoves(int x, int y, std::vector<std::vector<int>>& legalMoves) { //This functions adds all the possible diagonal moves for a piece at position (x, y) to the legalMoves vector
+std::vector<std::vector<int>> getLegalDiagonalMoves(int x, int y, std::vector<std::vector<int>>& legalMoves) {
     // Check top-left
     for (int i = x - 1, j = y - 1; i >= 0 && j >= 0; i--, j--) {
         if (isPieceAt(i, j)) {
@@ -335,7 +334,7 @@ std::vector<std::vector<int>> getLegalDiagonalMoves(int x, int y, std::vector<st
     return legalMoves;
 }
 
-std::vector<std::vector<int>> getLegalKnightMoves(int x, int y, std::vector<std::vector<int>>& legalMoves) { //This functions adds all the possible knight moves for a piece at position (x, y) to the legalMoves vector
+std::vector<std::vector<int>> getLegalKnightMoves(int x, int y, std::vector<std::vector<int>>& legalMoves) {
     std::vector<std::pair<int, int>> knightMoves = {
         {2, 1}, {2, -1}, {-2, 1}, {-2, -1},
         {1, 2}, {1, -2}, {-1, 2}, {-1, -2}
@@ -352,7 +351,7 @@ std::vector<std::vector<int>> getLegalKnightMoves(int x, int y, std::vector<std:
     return legalMoves;
 }
 
-std::vector<std::vector<int>> getLegalKingMoves(int x, int y, std::vector<std::vector<int>>& legalMoves) { //This functions adds all the possible king moves for a piece at position (x, y) to the legalMoves vector
+std::vector<std::vector<int>> getLegalKingMoves(int x, int y, std::vector<std::vector<int>>& legalMoves) {
     std::vector<std::pair<int, int>> kingMoves = {
         {1, 0}, {-1, 0}, {0, 1}, {0, -1},
         {1, 1}, {1, -1}, {-1, 1}, {-1, -1}
@@ -370,7 +369,7 @@ std::vector<std::vector<int>> getLegalKingMoves(int x, int y, std::vector<std::v
     return legalMoves;
 }
 
-std::vector<std::vector<int>> getLegalCastleMoves(int x, int y, std::vector<std::vector<int>>& legalMoves) { //This functions adds all the possible castling moves for a piece at position (x, y) to the legalMoves vector
+std::vector<std::vector<int>> getLegalCastleMoves(int x, int y, std::vector<std::vector<int>>& legalMoves) {
     if (board[x][y]->hasMoved) {
         return legalMoves; // King has moved, cannot castle
     }
@@ -392,7 +391,7 @@ std::vector<std::vector<int>> getLegalCastleMoves(int x, int y, std::vector<std:
     return legalMoves;
 }
 
-std::vector<std::vector<int>> getLegalPawnMoves(int x, int y, std::vector<std::vector<int>>& legalMoves) { //This functions adds all the possible pawn moves for a piece at position (x, y) to the legalMoves vector
+std::vector<std::vector<int>> getLegalPawnMoves(int x, int y, std::vector<std::vector<int>>& legalMoves) {
     int direction = board[x][y]->isWhite ? 1 : -1; // White pawns move up (positive direction), black pawns move down (negative direction)
     // Move forward
     if (!isPieceAt(x + direction, y)) {
@@ -405,14 +404,17 @@ std::vector<std::vector<int>> getLegalPawnMoves(int x, int y, std::vector<std::v
         }
     }
     // Capture diagonally
+    // NOTE: fixed from the original — it previously bounds-checked
+    // (x + direction) *after* already indexing board[x+direction][newY]
+    // (a potential out-of-bounds read), and then returned immediately
+    // instead of pushing the capture, so pawns could never actually
+    // capture. Both are fixed below.
     for (int dy = -1; dy <= 1; dy += 2) {
         int newY = y + dy;
-        
-        if (newY >= 0 && newY < 8 && isPieceAt(x + direction, newY) && board[x + direction][newY]->isWhite != board[x][y]->isWhite) {
-            if (x + direction >=0 && x+direction<8){
-                return legalMoves;
-            }
-            legalMoves.push_back({x + direction, newY});
+        int newX = x + direction;
+        if (newX >= 0 && newX < 8 && newY >= 0 && newY < 8 &&
+            isPieceAt(newX, newY) && board[newX][newY]->isWhite != board[x][y]->isWhite) {
+            legalMoves.push_back({newX, newY});
         }
     }
     return legalMoves;
@@ -470,3 +472,49 @@ bool isAttacked(int x, int y, bool isWhite) {
     return false; // The square is not attacked
 }
 
+// ---- New helpers for the GUI ----
+
+std::vector<std::vector<int>> getAllLegalMoves(int x, int y, bool WhitesTurn) {
+    std::vector<std::vector<int>> results;
+    if (!board[x][y] || !board[x][y]->isAlive || board[x][y]->isWhite != WhitesTurn) {
+        return results;
+    }
+    for (int i = 0; i < 8; i++) {
+        for (int j = 0; j < 8; j++) {
+            if (i == x && j == y) continue;
+            if (checkLegal(x, y, i, j) != 0) {
+                results.push_back({i, j});
+            }
+        }
+    }
+    return results;
+}
+
+bool isKingInCheck(bool isWhite) {
+    if (isWhite) {
+        return isAttacked(KingPositionWhite[0], KingPositionWhite[1], true);
+    }
+    return isAttacked(KingPositionBlack[0], KingPositionBlack[1], false);
+}
+
+bool hasAnyLegalMove(bool isWhite) {
+    for (int i = 0; i < 8; i++) {
+        for (int j = 0; j < 8; j++) {
+            if (board[i][j] && board[i][j]->isAlive && board[i][j]->isWhite == isWhite) {
+                if (!getAllLegalMoves(i, j, isWhite).empty()) {
+                    return true;
+                }
+            }
+        }
+    }
+    return false;
+}
+
+GameState getGameState(bool WhitesTurn) {
+    bool inCheck = isKingInCheck(WhitesTurn);
+    bool anyMoves = hasAnyLegalMove(WhitesTurn);
+    if (!anyMoves) {
+        return inCheck ? GameState::CHECKMATE : GameState::STALEMATE;
+    }
+    return inCheck ? GameState::CHECK : GameState::ONGOING;
+}

@@ -52,6 +52,8 @@ std::vector<std::vector<char>> FastPawnPromotionMoves(){
 }
 
 int main(){
+    VERBOSE = true; // console version wants the old debug prints back
+
     initializeBoard();
 
     bool gameRunning = true;

@@ -1,0 +1,15 @@
+{
+    "version": "0.2.0",
+    "configurations": [
+        {
+            "name": "Debug chessgame",
+            "type": "cppdbg",
+            "request": "launch",
+            "program": "${workspaceFolder}/chessgame.exe",
+            "cwd": "${workspaceFolder}",
+            "MIMode": "gdb",
+            "miDebuggerPath": "C:/Users/tonyw/.mingw/ucrt64/bin/gdb.exe",
+            "preLaunchTask": "build"
+        }
+    ]
+}

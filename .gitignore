@@ -1,0 +1,14 @@
+# Compiled files
+*.exe
+*.o
+*.out
+
+# Build folders
+build/
+bin/
+
+# VS Code settings
+.vscode/
+
+# SFML DLL files
+*.dll

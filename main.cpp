@@ -60,7 +60,7 @@ int main(){
     bool WhitesTurn = true;
     
 
-        /* ---------THIS IS FOR CASTLING TESTING ONLY */
+        /* ---------THIS IS FOR CASTLING TESTING ONLY *//*
         std::vector<std::vector<char>> castleMoves = FastQueenCastle();
 
         for(std::size_t i = 0; i < castleMoves.size(); i++){
@@ -69,7 +69,7 @@ int main(){
             WhitesTurn = !WhitesTurn; // Toggle turn (for testing purposes)
             printBoard();
         }
-        
+        */
 
     while(gameRunning){
         

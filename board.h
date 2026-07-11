@@ -35,6 +35,7 @@ std::vector<std::vector<int>> getLegalKnightMoves(int x, int y, std::vector<std:
 std::vector<std::vector<int>> getLegalKingMoves(int x, int y, std::vector<std::vector<int>>& legalMoves);
 std::vector<std::vector<int>> getLegalCastleMoves(int x, int y, std::vector<std::vector<int>>& legalMoves);
 std::vector<std::vector<int>> getLegalPawnMoves(int x, int y, std::vector<std::vector<int>>& legalMoves);
+void PawnEnPassantMoves(int x, int y, std::vector<std::vector<int>>& legalMoves);
 
 bool isAttacked(int x, int y, bool isWhite);
 

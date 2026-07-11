@@ -2,6 +2,9 @@
 #include <iostream>
 #include <optional>
 
+extern int enPassantX;
+extern int enPassantY;
+
 namespace {
     const sf::Color LIGHT_SQUARE(240, 217, 181);
     const sf::Color DARK_SQUARE(181, 136, 99);
@@ -182,11 +185,18 @@ void ChessGUI::drawHighlights() {
         window.draw(highlight);
     }
 
+    bool selectedIsPawn = selected && board[selX][selY] && board[selX][selY]->type == 'P';
+
     for (const auto& move : legalDestinations) {
         sf::Vector2f pos = boardToScreen(move[0], move[1]);
         bool isCapture = board[move[0]][move[1]] && board[move[0]][move[1]]->isAlive;
 
-        if (isCapture) {
+        // En passant: destination is empty, but it's still a capture
+        bool isEnPassant = selectedIsPawn && !isCapture &&
+                            move[1] != selY &&
+                            move[0] == enPassantX && move[1] == enPassantY;
+
+        if (isCapture || isEnPassant) {
             sf::CircleShape ring(SQUARE / 2.f - 4.f);
             ring.setPosition({pos.x + 4, pos.y + 4});
             ring.setFillColor(sf::Color::Transparent);
@@ -201,7 +211,6 @@ void ChessGUI::drawHighlights() {
         }
     }
 }
-
 void ChessGUI::drawPieces() {
     for (int x = 0; x < 8; x++) {
         for (int y = 0; y < 8; y++) {

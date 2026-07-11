@@ -29,6 +29,7 @@ class Pawn : public Piece {
     private:
 
 public:
+    
     bool Moved2; // To track if the pawn has moved (for en passant + 2 square move)
 
     std::vector<std::vector<int>> LegalMoves(int x, int y) override;

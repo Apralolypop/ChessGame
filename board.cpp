@@ -10,6 +10,9 @@ std::unique_ptr<Piece> board[8][8];
 std::vector<int> KingPositionWhite = {0, 4}; // Initial position of the white king
 std::vector<int> KingPositionBlack = {7, 4}; // Initial position of the black king
 
+int enPassantX = -1;
+int enPassantY = -1;
+
 bool VERBOSE = false;
 std::function<char(bool)> promotionChoiceProvider = nullptr;
 
@@ -112,6 +115,7 @@ int checkLegal(int x, int y, int newX, int newY){
                 return 1; // Move is legal
             }
         }
+
         if (VERBOSE) {
             for(const auto& move : legalMoves) {
                 std::cout << "Legal move: (" << move[0] << ", " << move[1] << ")" << std::endl;
@@ -179,6 +183,26 @@ bool movePiece(int x, int y, int newX, int newY, bool WhitesTurn){
 
         if(board[newX][newY]->type == 'K' || board[newX][newY]->type == 'R') {
             board[newX][newY]->hasMoved = true;
+        }
+
+        if(enPassantX != -1 && enPassantY != -1) {
+            if(board[newX][newY]->type == 'P' && newX == enPassantX && newY == enPassantY) {
+                int epDirection = board[newX][newY]->isWhite ? 1 : -1;
+                int capturedPawnX = newX - epDirection;
+                if(board[capturedPawnX][newY] && board[capturedPawnX][newY]->type == 'P' && board[capturedPawnX][newY]->isWhite != board[newX][newY]->isWhite) {
+                    board[capturedPawnX][newY]->isEaten(); // Capture the pawn
+                    board[capturedPawnX][newY] = nullptr; // Remove the captured pawn from the board
+                }
+            }
+        }
+
+        if(board[newX][newY]->type == 'P' && ((newX - x == 2 && board[newX][newY]->isWhite) || (x - newX == 2 && !board[newX][newY]->isWhite))) {
+            int epDirection = board[newX][newY]->isWhite ? 1 : -1;
+            enPassantX = newX - epDirection; // Passed-over square, correct for both colors
+            enPassantY = newY;
+        } else {
+            enPassantX = -1;
+            enPassantY = -1;
         }
 
         if((board[newX][newY]->type == 'P') && board[newX][newY]->isWhite && newX == 7) {
@@ -403,12 +427,7 @@ std::vector<std::vector<int>> getLegalPawnMoves(int x, int y, std::vector<std::v
             }
         }
     }
-    // Capture diagonally
-    // NOTE: fixed from the original — it previously bounds-checked
-    // (x + direction) *after* already indexing board[x+direction][newY]
-    // (a potential out-of-bounds read), and then returned immediately
-    // instead of pushing the capture, so pawns could never actually
-    // capture. Both are fixed below.
+
     for (int dy = -1; dy <= 1; dy += 2) {
         int newY = y + dy;
         int newX = x + direction;
@@ -420,9 +439,29 @@ std::vector<std::vector<int>> getLegalPawnMoves(int x, int y, std::vector<std::v
     return legalMoves;
 }
 
+void PawnEnPassantMoves(int x, int y, std::vector<std::vector<int>>& legalMoves) {
+    int direction = board[x][y]->isWhite ? 1 : -1;
+    if (enPassantX != -1 && enPassantY != -1) {
+        int capX = enPassantX - direction;
+        if (capX < 0 || capX > 7) return;
+        if (x == capX && (y == enPassantY - 1 || y == enPassantY + 1) &&
+            board[capX][enPassantY] &&
+            board[x][y]->isWhite != board[capX][enPassantY]->isWhite) {
+            legalMoves.push_back({enPassantX, enPassantY});
+        }
+    }
+}
+
 std::vector<std::vector<int>> Pawn::LegalMoves(int x, int y) {
     std::vector<std::vector<int>> legalMoves;
-    return getLegalPawnMoves(x, y, legalMoves);
+    getLegalPawnMoves(x, y, legalMoves);
+    if(VERBOSE) std::cout << "Checking for en passant moves..." << std::endl;
+    if(enPassantX != -1 && enPassantY != -1) {
+        PawnEnPassantMoves(x, y, legalMoves);
+        if(VERBOSE) std::cout << "En passant target square: (" << enPassantX << ", " << enPassantY << ")" << std::endl;
+    }
+
+    return legalMoves;
 }
 
 std::vector<std::vector<int>> Knight::LegalMoves(int x, int y) {

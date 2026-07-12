@@ -5,6 +5,8 @@
 #include "board.h"
 #include "pieces.h"
 
+//new branch
+
 std::unique_ptr<Piece> board[8][8];
 
 std::vector<int> KingPositionWhite = {0, 4}; // Initial position of the white king

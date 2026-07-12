@@ -5,7 +5,7 @@
 #include "board.h"
 #include "pieces.h"
 
-//new branch new test wowowow
+//new branch new test wowowow NETAN
 
 std::unique_ptr<Piece> board[8][8];
 

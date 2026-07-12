@@ -5,9 +5,10 @@
 #include "board.h"
 #include "pieces.h"
 
-//new branch new test wowowow NETAN
+//new branch new test wowowow NETAN1
 
 std::unique_ptr<Piece> board[8][8];
+//"NEW AAH VARIABLE"
 
 std::vector<int> KingPositionWhite = {0, 4}; // Initial position of the white king
 std::vector<int> KingPositionBlack = {7, 4}; // Initial position of the black king

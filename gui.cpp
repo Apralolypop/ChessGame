@@ -2,6 +2,10 @@
 #include <iostream>
 #include <optional>
 
+#ifdef ENGINE_ENABLED
+#include "engine/engine.h"
+#endif
+
 extern int enPassantX;
 extern int enPassantY;
 
@@ -77,6 +81,9 @@ void ChessGUI::run() {
                     handleClick(mb->position.x, mb->position.y);
                 }
             }
+            #ifdef ENGINE_ENABLED
+            evaluateboard();
+            #endif
         }
         draw();
     }

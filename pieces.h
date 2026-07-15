@@ -4,6 +4,27 @@
 #include <iostream>
 #include <vector>
 
+class DeadPiece; // Forward declaration
+class Piece;    
+class Pawn;
+class Rook;
+class Knight;
+class Bishop;
+class Queen;
+class King;
+
+// Piece is dependent on DeadPiece, so DEadpiece must be defined first
+
+struct DeadPiece {
+private:
+public:
+    char type; 
+    bool isWhite; 
+
+    DeadPiece(char t, bool white);
+    DeadPiece() = delete; // Default constructor
+};
+
 
 class Piece {
 public:
@@ -14,7 +35,10 @@ public:
 
     Piece(); // Default constructor
 
+    DeadPiece PieceEaten(); // Returns a vector indicating which piece has been captured //IsEaten API, this runs whenever a piece is captured
+
     void isEaten(){
+        PieceEaten(); // Call the PieceEaten function to update the piece's status
         isAlive = false;
     }
 
@@ -72,5 +96,8 @@ public:
     bool hasMoved; // To track if the king has moved (for castling)
     King(bool white) : Piece('K', white), hasMoved(false) {}
 };
+
+
+
 
 #endif // PIECES_H

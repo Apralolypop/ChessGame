@@ -22,9 +22,23 @@ int enPassantY = -1;
 bool VERBOSE = false;
 std::function<char(bool)> promotionChoiceProvider = nullptr;
 
+//DeadPiece Definition
+
+DeadPiece::DeadPiece(char t, bool white) : type(t), isWhite(white) {}
+
+//PIECE DEFINTIONS
+
 Piece::Piece() : type(' '), isWhite(true), isAlive(true), hasMoved(false) {} // Default constructor
 
 Piece::Piece(char t, bool white) : type(t), isWhite(white), isAlive(true), hasMoved(false) {}
+
+DeadPiece Piece::PieceEaten() {
+    // This function can be expanded to return information about captured pieces.
+    // For now, it returns an empty vector.
+    
+    return DeadPiece(Piece::type, Piece::isWhite);
+}
+
 
 void printBoard(){
     std::cout << "  --------BLACK SIDE---------" << std::endl;

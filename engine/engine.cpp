@@ -10,7 +10,7 @@
 /*
 Finish all the steps
 Add a Protected steps
-Cache getLegal steps so that we dont recalculate eveerytime
+Do this first Cache getLegal steps so that we dont recalculate eveerytime
 
 */
 

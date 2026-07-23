@@ -51,6 +51,31 @@ std::vector<std::vector<char>> FastPawnPromotionMoves(){
     return promotionMoves;
 }
 
+std::vector<std::vector<char>> EnPassantCheck(){
+    std::vector<std::vector<char>> enPassantCheckMoves;
+
+    // Get white pawn to e5
+    enPassantCheckMoves.push_back({'e','2','e','4'});
+    enPassantCheckMoves.push_back({'a','7','a','6'});
+
+    enPassantCheckMoves.push_back({'e','4','e','5'});
+    enPassantCheckMoves.push_back({'a','6','a','5'});
+
+    // Move king to e4
+    enPassantCheckMoves.push_back({'e','1','e','2'});
+    enPassantCheckMoves.push_back({'b','7','b','6'});
+
+    enPassantCheckMoves.push_back({'e','2','e','3'});
+    enPassantCheckMoves.push_back({'c','7','c','6'});
+
+    enPassantCheckMoves.push_back({'e','3','e','4'});
+    
+    // Black gives check with a double pawn push
+    enPassantCheckMoves.push_back({'d','7','d','5'});
+
+    return enPassantCheckMoves;
+}
+
 int main(){
     VERBOSE = true; // console version wants the old debug prints back
 
@@ -60,8 +85,8 @@ int main(){
     bool WhitesTurn = true;
     
 
-        /* ---------THIS IS FOR CASTLING TESTING ONLY *//*
-        std::vector<std::vector<char>> castleMoves = FastQueenCastle();
+        /* ---------THIS IS FOR TESTING ONLY */
+        std::vector<std::vector<char>> castleMoves = EnPassantCheck();
 
         for(std::size_t i = 0; i < castleMoves.size(); i++){
             std::cout << "Castle Move: " << castleMoves[i][0] << castleMoves[i][1] << " to " << castleMoves[i][2] << castleMoves[i][3] << std::endl;
@@ -69,7 +94,7 @@ int main(){
             WhitesTurn = !WhitesTurn; // Toggle turn (for testing purposes)
             printBoard();
         }
-        */
+        
 
     while(gameRunning){
         

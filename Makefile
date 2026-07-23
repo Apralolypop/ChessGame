@@ -11,7 +11,7 @@ endif
 
 .PHONY: all clean
 
-all: chess engine
+all: chess engine chessgame
 
 
 # ====================
@@ -30,6 +30,12 @@ engine: main_gui_engine.o board.o gui.o engine.o
 	$(CXX) main_gui_engine.o board.o gui.o engine.o -o engine $(SFML_LIBS)
 
 
+# ====================
+# NO GUI TEST
+# ====================
+chessgame: main.o board.o
+	$(CXX) main.o board.o -o chessgame
+
 # Compile same GUI twice
 # one normal
 # one with ENGINE_ENABLED
@@ -41,8 +47,8 @@ main_gui.o: main_gui.cpp board.h gui.h
 main_gui_engine.o: main_gui.cpp board.h gui.h engine/engine.h
 	$(CXX) $(CXXFLAGS) -DENGINE_ENABLED -c main_gui.cpp -o main_gui_engine.o
 
-
-
+main.o: main.cpp board.h
+	$(CXX) $(CXXFLAGS) -c main.cpp
 # ====================
 # Shared files
 # ====================
@@ -61,4 +67,5 @@ engine.o: engine/engine.cpp engine/engine.h board.h pieces.h
 
 
 clean:
-	rm -f *.o chess engine
+	rm -f *.o chess engine chessgame
+	del /Q *.o chess.exe engine.exe chessgame.exe

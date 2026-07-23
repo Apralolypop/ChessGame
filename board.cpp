@@ -89,6 +89,22 @@ bool KingWillBeChecked(int x, int y, int newX, int newY){
 
     //Move the piece temporarily to the new position
     board[newX][newY] = std::move(board[x][y]);
+    std::unique_ptr<Piece> capturedPiece;
+    int capturedX, capturedY;
+
+    if(board[newX][newY]->type == 'P'){ //Check if its an enPassant, and eats the piece
+        if(enPassantX != -1 && enPassantY != -1) {
+            if(board[newX][newY]->type == 'P' && newX == enPassantX && newY == enPassantY) {
+                int epDirection = board[newX][newY]->isWhite ? 1 : -1;
+                int capturedPawnX = newX - epDirection;
+                if(board[capturedPawnX][newY] && board[capturedPawnX][newY]->type == 'P' && board[capturedPawnX][newY]->isWhite != board[newX][newY]->isWhite) {
+                    capturedPiece = std::move(board[capturedPawnX][newY]);
+                    capturedX = capturedPawnX;
+                    capturedY = newY;
+                }
+            }
+        }
+    }
 
     // Check if the king is in check at the new position
     if(board[newX][newY]->type == 'K') {
@@ -118,6 +134,10 @@ bool KingWillBeChecked(int x, int y, int newX, int newY){
     // Restore the original state of the board
     board[x][y] = std::move(board[newX][newY]);
     board[newX][newY] = std::move(originalPiece);
+
+    if(capturedPiece){
+        board[capturedX][capturedY] = std::move(capturedPiece);
+    }
 
     return isInCheck; // Return true if in check, false otherwise
 }

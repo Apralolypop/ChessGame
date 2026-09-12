@@ -34,6 +34,7 @@ struct move {
     bool isEnPassant = false; // true if the move is an en passant capture
     bool kingHasMoved = false; // true if the king has moved, false otherwise
     bool rookHasMoved = false; // true if the rook has moved, false otherwise
+    bool pawnHasMoved = false; // true if the pawn has moved, false otherwise
     
     std::unique_ptr<Piece> capturedPiece = nullptr; // Pointer to the captured piece, if any
 

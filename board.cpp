@@ -649,14 +649,16 @@ void makeMove(move &m, bool WhitesTurn) {
         board[m.newX][m.newY] = std::move(board[m.x][m.y]);
         board[m.x][m.y] = nullptr;
 
-        if(board[m.newX][m.newY]->type == 'K'){
+        if(board[m.newX][m.newY]->type == 'K' && board[m.newX][m.newY]->hasMoved == false) {
             m.kingHasMoved = true;
-        } else if(board[m.newX][m.newY]->type == 'R') {
+        } else if(board[m.newX][m.newY]->type == 'R' && board[m.newX][m.newY]->hasMoved == false) {
             m.rookHasMoved = true;
+        } else if(board[m.newX][m.newY]->type == 'P' && board[m.newX][m.newY]->hasMoved == false) {
+            m.pawnHasMoved = true;
         }
 
-        if(enPassantX != -1 && enPassantY != -1) {
-            if(board[m.newX][m.newY]->type == 'P' && m.newX == enPassantX && m.newY == enPassantY) {
+        if(m.possibleEnPassantX != -1 && m.possibleEnPassantY != -1) {
+            if(board[m.newX][m.newY]->type == 'P' && m.newX == m.possibleEnPassantX && m.newY == m.possibleEnPassantY) {
                 int epDirection = board[m.newX][m.newY]->isWhite ? 1 : -1;
                 int capturedPawnX = m.newX - epDirection;
                 if(board[capturedPawnX][m.newY] && board[capturedPawnX][m.newY]->type == 'P' && board[capturedPawnX][m.newY]->isWhite != board[m.newX][m.newY]->isWhite) {
@@ -665,15 +667,19 @@ void makeMove(move &m, bool WhitesTurn) {
                     board[capturedPawnX][m.newY] = nullptr; // Remove the captured pawn from the board
                 }
             }
+
+            m.possibleEnPassantX = -1;
+            m.possibleEnPassantY = -1;
+            //Have to remeber to copy this value into the new move object, so that we can undo it properly;
         }
 
         if(board[m.newX][m.newY]->type == 'P' && ((m.newX - m.x == 2 && board[m.newX][m.newY]->isWhite) || (m.x - m.newX == 2 && !board[m.newX][m.newY]->isWhite))) {
             int epDirection = board[m.newX][m.newY]->isWhite ? 1 : -1;
-            enPassantX = m.newX - epDirection; // Passed-over square, correct for both colors
-            enPassantY = m.newY;
+            m.possibleEnPassantX = m.newX - epDirection; // Passed-over square, correct for both colors
+            m.possibleEnPassantY = m.newY;
         } else {
-            enPassantX = -1;
-            enPassantY = -1;
+            m.possibleEnPassantX = -1;
+            m.possibleEnPassantY = -1;
         }
 
         if((board[m.newX][m.newY]->type == 'P') && board[m.newX][m.newY]->isWhite && m.newX == 7) {
@@ -739,7 +745,15 @@ void makeMove(move &m, bool WhitesTurn) {
 void undoMove(move &m, bool WhitesTurn) {
     // Move the piece back to its original position
     board[m.x][m.y] = std::move(board[m.newX][m.newY]);
-    board[m.x][m.y]->hasMoved = false; // Reset hasMoved flag if needed
+
+    if(m.kingHasMoved) {
+        board[m.x][m.y]->hasMoved = false; // Reset hasMoved flag for the king
+    } else if(m.rookHasMoved) {
+        board[m.x][m.y]->hasMoved = false; // Reset hasMoved flag for the rook
+    } else if(m.pawnHasMoved) {
+        board[m.x][m.y]->hasMoved = false; // Reset hasMoved flag for the pawn
+    }
+
 
     // Restore the captured piece if there was one
     if (m.capturedPiece) {
@@ -749,20 +763,9 @@ void undoMove(move &m, bool WhitesTurn) {
         board[m.newX][m.newY] = nullptr; // Clear the destination square
     }
 
-    // Update king positions if necessary
-    if (board[m.x][m.y]->type == 'K') {
-        if (WhitesTurn) {
-            KingPositionWhite = {m.x, m.y};
-        } else {
-            KingPositionBlack = {m.x, m.y};
-        }
-    }
+
+
 }
-
-
-
-
-
 
 
 /*

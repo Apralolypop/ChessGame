@@ -4,20 +4,18 @@
 
 #include "../board.h"
 #include "../pieces.h"
-#include "engine.h"
+#include "evaluate.h"
 
 //Engine to do list /*
 /*
 Finish all the steps
-Add a Protected steps
-Do this first Cache getLegal steps so that we dont recalculate eveerytime
-
+Definitely redesign all the function in this so that they are more efficient and less redundant
 */
 
 int evaluation = 0; // Initialize the evaluation score to 0
-bool EngineIsWhite; // Global variable to track the current player's turn
+bool EngineIsWhite; // Global variable to track engine's color, true for white, false for black
 
-#define EVALPERPIECE { 100, 320, 330, 500, 900, 20000 } // Pawn, Knight, Bishop, Rook, Queen, King
+#define EVALPERPIECE { 100, 320, 330, 500, 900, 200000 } // Pawn, Knight, Bishop, Rook, Queen, King
 
 #define PAWN 0
 #define KNIGHT 1
@@ -25,6 +23,14 @@ bool EngineIsWhite; // Global variable to track the current player's turn
 #define ROOK 3
 #define QUEEN 4
 #define KING 5
+
+void ColorScore(bool isWhite, int &score) {
+    if(isWhite) {
+        score *= 1; // White pieces have positive evaluation
+    } else {
+        score *= -1; // Black pieces have negative evaluation
+    }
+}
 
 const int pieceSquareTable[6][8][8] = {
     // Pawn
@@ -96,6 +102,27 @@ const int pieceSquareTable[6][8][8] = {
 };
 
 int evaluateBoard(){
+    int score = 0;
+    score += evaluateBoardPiece();
+
+    score += evaluatePawnStructure(true); // Evaluate white pawn structure
+    score += evaluatePawnStructure(false); // Evaluate black pawn structure
+
+    score += evaluateKingSafety(KingPositionWhite[0], KingPositionWhite[1], true); // Evaluate white king safety
+    score += evaluateKingSafety(KingPositionBlack[0], KingPositionBlack[1], false); // Evaluate black king safety
+
+    for(int i = 0; i < 8; i++){
+        for(int j = 0; j < 8; j++){
+            if(board[i][j] && board[i][j]->isAlive){
+                score += evaluateMobility(i, j); // Evaluate mobility for each piece
+                score += evaluatePieceSquare(i, j, board[i][j]->type, board[i][j]->isWhite);
+            }
+        }
+    }
+    return score;
+}
+
+int evaluateBoardPiece(){
     for(int i = 0; i < 8; i++) {
         for (int j = 0; j < 8; j++) {
             if (board[i][j] && board[i][j]->isAlive) {
@@ -194,17 +221,12 @@ int evaluatePieceSquare(int x, int y, char Type, bool isWhite){
 int evaluateMobility(int x, int y){
     int mobility = board[x][y]->LegalMoves(x, y).size(); 
 
-    if(board [x][y]->isWhite){
-        mobility *= 1; // White pieces have positive mobility
-    }
-    else{
-        mobility *= -1; // Black pieces have negative mobility
-    }
+    ColorScore(board[x][y]->isWhite, mobility);
 
     return mobility*5; // Weight mobility by 5 points per legal move
 }
 
-int evaluatePawnStructure(int x, int y, bool isWhite) {
+int evaluatePawnStructure(bool isWhite) {
     int score = 0;
 
     // Check for doubled pawns
@@ -238,19 +260,14 @@ int evaluatePawnStructure(int x, int y, bool isWhite) {
         }
     }
 
-    if(isWhite){
-        score *= 1; // White pieces have positive pawn structure score
-    }
-    else{
-        score *= -1; // Black pieces have negative pawn structure score
-    }
+    ColorScore(isWhite, score); 
     return score;
 }
 
 int evaluateKingSafety(int x, int y, bool isWhite) {
-    int score = 0;
+        int score = 0;
 
-    // Check for castling rights
+        // Check for castling rights
     if (board[x][y]->hasMoved) {
         score -= 20; // Penalize if the king has moved (lost castling rights)
     }
@@ -267,12 +284,6 @@ int evaluateKingSafety(int x, int y, bool isWhite) {
         }
     }
 
-    if(isWhite){
-        score *= 1; // White pieces have positive king safety score
-    }
-    else{
-        score *= -1; // Black pieces have negative king safety score
-    }
-
+    ColorScore(isWhite, score);
     return score;
 }

@@ -5,7 +5,9 @@
 #include "board.h"
 #include "pieces.h"
 
-//new branch new test wowowow NETAN1
+//new branch new test 
+
+// There isnt a not enough material lost, so if there is only a bishop left, 1 knight left or anything of the sort, its ggs
 
 std::unique_ptr<Piece> board[8][8];
 
@@ -179,7 +181,7 @@ int checkLegal(int x, int y, int newX, int newY){
 bool movePiece(int x, int y, int newX, int newY, bool WhitesTurn){
     if (VERBOSE) std::cout<<"Attempting to move piece from (" << x << ", " << y << ") to (" << newX << ", " << newY << ")" << std::endl;
     if (board[x][y] && board[x][y]->isAlive && board[x][y]->isWhite == WhitesTurn) {
-        // Placeholder for move validation logic      
+    
         int returnValue = checkLegal(x, y, newX, newY);
         if (returnValue == 0) {
             if (VERBOSE) std::cout << "Move is not legal!" << std::endl;
@@ -569,6 +571,19 @@ std::vector<std::vector<int>> getAllLegalMoves(int x, int y, bool WhitesTurn) {
     return results;
 }
 
+std::vector<std::vector<int>> getAllLegalMovesForColor(bool isWhite) {
+    std::vector<std::vector<int>> results;
+    for (int i = 0; i < 8; i++) {
+        for (int j = 0; j < 8; j++) {
+            if (board[i][j] && board[i][j]->isAlive && board[i][j]->isWhite == isWhite) {
+                std::vector<std::vector<int>> pieceMoves = getAllLegalMoves(i, j, isWhite);
+                results.insert(results.end(), pieceMoves.begin(), pieceMoves.end());
+            }
+        }
+    }
+    return results;
+}
+
 bool isKingInCheck(bool isWhite) {
     if (isWhite) {
         return isAttacked(KingPositionWhite[0], KingPositionWhite[1], true);
@@ -588,6 +603,171 @@ bool hasAnyLegalMove(bool isWhite) {
     }
     return false;
 }
+
+
+
+/*
+Very important for engine
+*/
+
+void makeMove(move &m, bool WhitesTurn) {
+    if (board[m.x][m.y] && board[m.x][m.y]->isAlive && board[m.x][m.y]->isWhite == WhitesTurn) {
+    
+        int returnValue = checkLegal(m.x, m.y, m.newX, m.newY); //might be redundant, but we need to check legality again for the engine
+        if (returnValue == 0) {
+            m.isLegal = false;
+            return;
+        }
+
+        if(returnValue == 1) {
+            if(board[m.newX][m.newY] && board[m.newX][m.newY]->isAlive) {
+                if(board[m.newX][m.newY]->isWhite != board[m.x][m.y]->isWhite) {
+                    m.capturedPiece = std::move(board[m.newX][m.newY]); // Capture the piece
+                } else {
+                    m.isLegal = false;
+                    return;
+                }
+            }
+        }
+
+        if(returnValue == 2) {
+            if(m.newY == 6) { // Kingside castling
+                board[m.x][5] = std::move(board[m.x][7]); // Move rook to f-file
+                board[m.x][7] = nullptr; // Clear original rook position
+                board[m.x][5]->hasMoved = true; // Mark the rook as having moved
+                m.kingSideCastle = true;
+            } else if(m.newY == 2) { // Queenside castling
+                board[m.x][3] = std::move(board[m.x][0]); // Move rook to d-file
+                board[m.x][0] = nullptr; // Clear original rook position
+                board[m.x][3]->hasMoved = true; // Mark the rook as having moved
+                m.queenSideCastle = true;
+            }
+        }
+
+        //generate smth to keep track of king position
+
+        board[m.newX][m.newY] = std::move(board[m.x][m.y]);
+        board[m.x][m.y] = nullptr;
+
+        if(board[m.newX][m.newY]->type == 'K'){
+            m.kingHasMoved = true;
+        } else if(board[m.newX][m.newY]->type == 'R') {
+            m.rookHasMoved = true;
+        }
+
+        if(enPassantX != -1 && enPassantY != -1) {
+            if(board[m.newX][m.newY]->type == 'P' && m.newX == enPassantX && m.newY == enPassantY) {
+                int epDirection = board[m.newX][m.newY]->isWhite ? 1 : -1;
+                int capturedPawnX = m.newX - epDirection;
+                if(board[capturedPawnX][m.newY] && board[capturedPawnX][m.newY]->type == 'P' && board[capturedPawnX][m.newY]->isWhite != board[m.newX][m.newY]->isWhite) {
+                    m.capturedPiece = std::move(board[capturedPawnX][m.newY]); // Capture the pawn
+                    m.isEnPassant = true;
+                    board[capturedPawnX][m.newY] = nullptr; // Remove the captured pawn from the board
+                }
+            }
+        }
+
+        if(board[m.newX][m.newY]->type == 'P' && ((m.newX - m.x == 2 && board[m.newX][m.newY]->isWhite) || (m.x - m.newX == 2 && !board[m.newX][m.newY]->isWhite))) {
+            int epDirection = board[m.newX][m.newY]->isWhite ? 1 : -1;
+            enPassantX = m.newX - epDirection; // Passed-over square, correct for both colors
+            enPassantY = m.newY;
+        } else {
+            enPassantX = -1;
+            enPassantY = -1;
+        }
+
+        if((board[m.newX][m.newY]->type == 'P') && board[m.newX][m.newY]->isWhite && m.newX == 7) {
+            char promotionChoice = 'Q';
+            if (promotionChoiceProvider) {
+                promotionChoice = promotionChoiceProvider(true);
+            } else {
+                std::cout << "White pawn promoted!" << std::endl;
+                std::cout << "Choose a piece for promotion (Q, R, B, N): ";
+                std::cin >> promotionChoice;
+            }
+
+            // Promote to the chosen piece
+            if (promotionChoice == 'Q') {
+                board[m.newX][m.newY] = std::make_unique<Queen>(true);
+            } else if (promotionChoice == 'R') {
+                board[m.newX][m.newY] = std::make_unique<Rook>(true);
+            } else if (promotionChoice == 'B') {
+                board[m.newX][m.newY] = std::make_unique<Bishop>(true);
+            } else if (promotionChoice == 'N') {
+                board[m.newX][m.newY] = std::make_unique<Knight>(true);
+            } else {
+                if (VERBOSE) std::cout << "Invalid choice! Promoting to Queen by default." << std::endl;
+                board[m.newX][m.newY] = std::make_unique<Queen>(true);
+            }
+
+            m.promotionChoice = promotionChoice; // Store the promotion choice in the move object
+        } else if((board[m.newX][m.newY]->type == 'P') && !board[m.newX][m.newY]->isWhite && m.newX == 0) {
+            char promotionChoice = 'Q';
+            if (promotionChoiceProvider) {
+                promotionChoice = promotionChoiceProvider(false);
+            } else {
+                std::cout << "Black pawn promoted!" << std::endl;
+                std::cout << "Choose a piece for promotion (Q, R, B, N): ";
+                std::cin >> promotionChoice;
+            }
+
+            // Promote to the chosen piece
+            if (promotionChoice == 'Q') {
+                board[m.newX][m.newY] = std::make_unique<Queen>(false);
+            } else if (promotionChoice == 'R') {
+                board[m.newX][m.newY] = std::make_unique<Rook>(false);
+            } else if (promotionChoice == 'B') {
+                board[m.newX][m.newY] = std::make_unique<Bishop>(false);
+            } else if (promotionChoice == 'N') {
+                board[m.newX][m.newY] = std::make_unique<Knight>(false);
+            } else {
+                board[m.newX][m.newY] = std::make_unique<Queen>(false);
+            }
+
+            m.promotionChoice = promotionChoice; // Store the promotion choice in the move object
+        }
+
+        m.isLegal = true;
+        return;
+    }
+    else{
+        m.isLegal = false;
+        return;
+    }
+}
+
+void undoMove(move &m, bool WhitesTurn) {
+    // Move the piece back to its original position
+    board[m.x][m.y] = std::move(board[m.newX][m.newY]);
+    board[m.x][m.y]->hasMoved = false; // Reset hasMoved flag if needed
+
+    // Restore the captured piece if there was one
+    if (m.capturedPiece) {
+        board[m.newX][m.newY] = std::move(m.capturedPiece); //move thingy
+        board[m.newX][m.newY]->isAlive = true; // Mark the piece as alive again
+    } else {
+        board[m.newX][m.newY] = nullptr; // Clear the destination square
+    }
+
+    // Update king positions if necessary
+    if (board[m.x][m.y]->type == 'K') {
+        if (WhitesTurn) {
+            KingPositionWhite = {m.x, m.y};
+        } else {
+            KingPositionBlack = {m.x, m.y};
+        }
+    }
+}
+
+
+
+
+
+
+
+/*
+Very important for gui
+*/
 
 GameState getGameState(bool WhitesTurn) {
     bool inCheck = isKingInCheck(WhitesTurn);

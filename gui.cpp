@@ -3,7 +3,8 @@
 #include <optional>
 
 #ifdef ENGINE_ENABLED
-#include "engine/engine.h"
+#include "engine/evaluate.h"
+#include "engine/minimax.h"
 #endif
 
 extern int enPassantX;

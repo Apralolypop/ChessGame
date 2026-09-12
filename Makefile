@@ -1,6 +1,8 @@
 CXX = g++
 CXXFLAGS = -std=c++20 -Wall -Wextra -g
 
+#Reminder for urself, use mingw32-make, not make
+
 SFML_CFLAGS := $(shell pkg-config --cflags sfml-graphics sfml-window sfml-system 2>/dev/null)
 SFML_LIBS := $(shell pkg-config --libs sfml-graphics sfml-window sfml-system 2>/dev/null)
 
@@ -26,8 +28,8 @@ chess: main_gui.o board.o gui.o
 # GUI + AI engine
 # ====================
 
-engine: main_gui_engine.o board.o gui.o engine.o
-	$(CXX) main_gui_engine.o board.o gui.o engine.o -o engine $(SFML_LIBS)
+engine: main_gui_engine.o board.o gui.o evaluate.o minimax.o
+	$(CXX) main_gui_engine.o board.o gui.o evaluate.o minimax.o -o engine $(SFML_LIBS)
 
 
 # ====================
@@ -44,7 +46,7 @@ main_gui.o: main_gui.cpp board.h gui.h
 	$(CXX) $(CXXFLAGS) -c main_gui.cpp
 
 
-main_gui_engine.o: main_gui.cpp board.h gui.h engine/engine.h
+main_gui_engine.o: main_gui.cpp board.h gui.h engine/evaluate.h engine/minimax.h
 	$(CXX) $(CXXFLAGS) -DENGINE_ENABLED -c main_gui.cpp -o main_gui_engine.o
 
 main.o: main.cpp board.h
@@ -61,9 +63,11 @@ gui.o: gui.cpp gui.h board.h pieces.h
 	$(CXX) $(CXXFLAGS) $(SFML_CFLAGS) -c gui.cpp
 
 
-engine.o: engine/engine.cpp engine/engine.h board.h pieces.h
-	$(CXX) $(CXXFLAGS) -Iengine -c engine/engine.cpp -o engine.o
+evaluate.o: engine/evaluate.cpp engine/evaluate.h board.h pieces.h
+	$(CXX) $(CXXFLAGS) -Iengine -c engine/evaluate.cpp -o evaluate.o
 
+minimax.o: engine/minimax.cpp engine/minimax.h board.h pieces.h
+	$(CXX) $(CXXFLAGS) -Iengine -c engine/minimax.cpp -o minimax.o
 
 
 clean:

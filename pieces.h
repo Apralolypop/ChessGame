@@ -46,6 +46,42 @@ public:
 
     virtual std::vector<std::vector<int>> LegalMoves(int x, int y) = 0; // Placeholder for legal move generation logic
 
+    Piece(const Piece& other) : type(other.type), isWhite(other.isWhite), isAlive(other.isAlive), hasMoved(other.hasMoved) {}
+
+    Piece(Piece&& other) noexcept : type(other.type), isWhite(other.isWhite), isAlive(other.isAlive), hasMoved(other.hasMoved) {
+        // Reset the moved-from object
+        other.type = ' ';
+        other.isWhite = true;
+        other.isAlive = false;
+        other.hasMoved = false;
+    }
+
+    Piece& operator=(const Piece& other) {
+        if (this != &other) {
+            type = other.type;
+            isWhite = other.isWhite;
+            isAlive = other.isAlive;
+            hasMoved = other.hasMoved;
+        }
+        return *this;
+    }
+
+    Piece& operator=(Piece&& other) noexcept {
+        if (this != &other) {
+            type = other.type;
+            isWhite = other.isWhite;
+            isAlive = other.isAlive;
+            hasMoved = other.hasMoved;
+
+            // Reset the moved-from object
+            other.type = ' ';
+            other.isWhite = true;
+            other.isAlive = false;
+            other.hasMoved = false;
+        }
+        return *this;
+    }
+
     Piece(char t, bool white);
 };
 

@@ -192,5 +192,87 @@ int evaluatePieceSquare(int x, int y, char Type, bool isWhite){
 }
 
 int evaluateMobility(int x, int y){
-    int mobility = board[x][y]->LegalMoves(x, y).size(); //This might create a bunch of vectors and make this slow;
+    int mobility = board[x][y]->LegalMoves(x, y).size(); 
+
+    if(board [x][y]->isWhite){
+        mobility *= 1; // White pieces have positive mobility
+    }
+    else{
+        mobility *= -1; // Black pieces have negative mobility
+    }
+
+    return mobility*5; // Weight mobility by 5 points per legal move
+}
+
+int evaluatePawnStructure(int x, int y, bool isWhite) {
+    int score = 0;
+
+    // Check for doubled pawns
+    for (int j = 0; j < 8; j++) {
+        int pawnCount = 0;
+        for (int i = 0; i < 8; i++) {
+            if (board[i][j] && board[i][j]->type == 'P' && board[i][j]->isWhite == isWhite) {
+                pawnCount++;
+            }
+        }
+        if (pawnCount > 1) {
+            score -= 20 * (pawnCount - 1); // Penalize for each additional pawn in the same file
+        }
+    }
+
+    // Check for isolated pawns
+    for (int j = 0; j < 8; j++) {
+        bool hasAdjacentPawn = false;
+        for (int i = 0; i < 8; i++) {
+            if (board[i][j] && board[i][j]->type == 'P' && board[i][j]->isWhite == isWhite) {
+                // Check adjacent files
+                if ((j > 0 && board[i][j - 1] && board[i][j - 1]->type == 'P' && board[i][j - 1]->isWhite == isWhite) ||
+                    (j < 7 && board[i][j + 1] && board[i][j + 1]->type == 'P' && board[i][j + 1]->isWhite == isWhite)) {
+                    hasAdjacentPawn = true;
+                    break;
+                }
+            }
+        }
+        if (!hasAdjacentPawn) {
+            score -= 15; // Penalize for isolated pawns
+        }
+    }
+
+    if(isWhite){
+        score *= 1; // White pieces have positive pawn structure score
+    }
+    else{
+        score *= -1; // Black pieces have negative pawn structure score
+    }
+    return score;
+}
+
+int evaluateKingSafety(int x, int y, bool isWhite) {
+    int score = 0;
+
+    // Check for castling rights
+    if (board[x][y]->hasMoved) {
+        score -= 20; // Penalize if the king has moved (lost castling rights)
+    }
+
+    // Check for pawn shield
+    int direction = isWhite ? 1 : -1; // White pawns are below the king, black pawns are above
+    for (int j = -1; j <= 1; j++) {
+        int newX = x + direction;
+        int newY = y + j;
+        if (newX >= 0 && newX < 8 && newY >= 0 && newY < 8) {
+            if (board[newX][newY] && board[newX][newY]->type == 'P' && board[newX][newY]->isWhite == isWhite) {
+                score += 10; // Reward for having a pawn shield
+            }
+        }
+    }
+
+    if(isWhite){
+        score *= 1; // White pieces have positive king safety score
+    }
+    else{
+        score *= -1; // Black pieces have negative king safety score
+    }
+
+    return score;
 }

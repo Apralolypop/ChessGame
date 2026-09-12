@@ -668,9 +668,7 @@ void makeMove(move &m, bool WhitesTurn) {
                 }
             }
 
-            m.possibleEnPassantX = -1;
-            m.possibleEnPassantY = -1;
-            //Have to remeber to copy this value into the new move object, so that we can undo it properly;
+            //Check if enPassant happened, if it did, do not copy the enPassantX and enPassantY to the move object, because it is no longer valid;
         }
 
         if(board[m.newX][m.newY]->type == 'P' && ((m.newX - m.x == 2 && board[m.newX][m.newY]->isWhite) || (m.x - m.newX == 2 && !board[m.newX][m.newY]->isWhite))) {
@@ -763,8 +761,36 @@ void undoMove(move &m, bool WhitesTurn) {
         board[m.newX][m.newY] = nullptr; // Clear the destination square
     }
 
+    // Handle castling undo
+    if (m.kingSideCastle) {
+        board[m.x][7] = std::move(board[m.x][5]); // Move rook back to h-file
+        board[m.x][5] = nullptr; // Clear f-file
+        board[m.x][7]->hasMoved = false; // Reset hasMoved flag for the rook
+    } else if (m.queenSideCastle) {
+        board[m.x][0] = std::move(board[m.x][3]); // Move rook back to a-file
+        board[m.x][3] = nullptr; // Clear d-file
+        board[m.x][0]->hasMoved = false; // Reset hasMoved flag for the rook
+    }
 
+    // Handle en passant undo
+    if (m.isEnPassant) {
+        // Restore the captured pawn
+        if (WhitesTurn) {
+            board[m.possibleEnPassantX][m.possibleEnPassantY] = std::make_unique<Pawn>(false);
+        } else {
+            board[m.possibleEnPassantX][m.possibleEnPassantY] = std::make_unique<Pawn>(true);
+        }
+        board[m.possibleEnPassantX][m.possibleEnPassantY]->isAlive = true;
+    }
 
+    if(m.promotionChoice != '\0') {
+        // Undo the promotion by replacing the promoted piece with a pawn
+        if (WhitesTurn) {
+            board[m.x][m.y] = std::make_unique<Pawn>(true);
+        } else {
+            board[m.x][m.y] = std::make_unique<Pawn>(false);
+        }
+    }
 }
 
 

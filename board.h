@@ -99,6 +99,8 @@ struct move {
         }
         return *this;
     }
+
+    ~move() = default; // Default destructor
 };
 
 void printBoard();

@@ -25,8 +25,8 @@ enum class GameState { ONGOING, CHECK, CHECKMATE, STALEMATE };
 struct move {
     int x, y;
     int newX, newY;
-    bool isLegal; // true if the move is legal, false otherwise
-    char promotionChoice; // 'Q', 'R', 'B', or 'N' / '0' for invalid
+    bool isLegal = false; // true if the move is legal, false otherwise
+    char promotionChoice = '0'; // 'Q', 'R', 'B', or 'N' / '0' for invalid
     bool kingSideCastle = false; // true if the move is a kingside castle
     bool queenSideCastle = false; // true if the move is a queenside castle
     int possibleEnPassantX = -1; // The x-coordinate of a pawn that can be captured en passant, or -1 if none
@@ -37,7 +37,7 @@ struct move {
     bool pawnHasMoved = false; // true if the pawn has moved, false otherwise
     
     std::unique_ptr<Piece> capturedPiece = nullptr; // Pointer to the captured piece, if any
-
+    move() = default; // Default constructor
     move(int x, int y, int newX, int newY, char promotionChoice = '0', bool kingSideCastle = false, bool queenSideCastle = false)
         : x(x), y(y), newX(newX), newY(newY), promotionChoice(promotionChoice), kingSideCastle(kingSideCastle), queenSideCastle(queenSideCastle),
         isLegal(false), isEnPassant(false), kingHasMoved(false), rookHasMoved(false){}

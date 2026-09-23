@@ -22,11 +22,15 @@ int minimax(int depth, bool isMaximizingPlayer, int alpha, int beta){
                         buffer.newY = newY;
                         makeMove(buffer, isMaximizingPlayer);
                         if(buffer.isLegal){
-                            int eval = minimax(depth - 1, false, alpha, beta);
+                            int eval = minimax(depth - 1, !isMaximizingPlayer, alpha, beta);
                             maxEval = std::max(maxEval, eval);
                             alpha = std::max(alpha, eval);
                             // Undo the move
                             undoMove(buffer, isMaximizingPlayer);
+
+                            if(beta <= alpha){
+                                return maxEval; // Beta cut-off
+                            }
                         }
                     }
                 }
@@ -56,6 +60,9 @@ int minimax(int depth, bool isMaximizingPlayer, int alpha, int beta){
                             beta = std::min(beta, eval);
                             // Undo the move
                             undoMove(buffer, isMaximizingPlayer);
+                            if(beta <= alpha){
+                                return minEval; // Alpha cut-off
+                            }
                         }
                     }
                 }

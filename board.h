@@ -26,7 +26,9 @@ struct move {
     int x, y;
     int newX, newY;
     bool isLegal = false; // true if the move is legal, false otherwise
-    char promotionChoice = '0'; // 'Q', 'R', 'B', or 'N' / '0' for invalid
+    bool isPromotion = false; // true if the move is a promotion
+    char promotionChoice = '\0'; // 'Q', 'R', 'B', or 'N' for promotion, '\0' if not a promotion
+    bool givesCheck = false; // true if the move gives check, false otherwise
     bool kingSideCastle = false; // true if the move is a kingside castle
     bool queenSideCastle = false; // true if the move is a queenside castle
     int possibleEnPassantX = -1; // The x-coordinate of a pawn that can be captured en passant, or -1 if none
@@ -38,30 +40,38 @@ struct move {
     
     std::unique_ptr<Piece> capturedPiece = nullptr; // Pointer to the captured piece, if any
     move() = default; // Default constructor
-    move(int x, int y, int newX, int newY, char promotionChoice = '0', bool kingSideCastle = false, bool queenSideCastle = false)
-        : x(x), y(y), newX(newX), newY(newY), promotionChoice(promotionChoice), kingSideCastle(kingSideCastle), queenSideCastle(queenSideCastle),
-        isLegal(false), isEnPassant(false), kingHasMoved(false), rookHasMoved(false){}
+    move(int x, int y, int newX, int newY, bool isPromotion = false, char promotionChoice = '\0', bool queenSideCastle = false, bool kingSideCastle = false)
+        : x(x), y(y), newX(newX), newY(newY), isLegal(false), isPromotion(isPromotion), promotionChoice(promotionChoice), givesCheck(false), kingSideCastle(kingSideCastle),
+        queenSideCastle(queenSideCastle),  isEnPassant(false), kingHasMoved(false), rookHasMoved(false), pawnHasMoved(false){}
    
+    /*
+    Warning from constructors if the order is of the constructor parameters is the same as the variables being initialized. Not actual harm but just a warning. I can fix this by changing the order of the parameters in the constructor, but I don't want to do that because it would be confusing. So I'm just going to leave it as is and ignore the warning. 
+    */
+
     move(move&& other) noexcept
-        : x(other.x), y(other.y), newX(other.newX), newY(other.newY), promotionChoice(other.promotionChoice),
-          kingSideCastle(other.kingSideCastle), queenSideCastle(other.queenSideCastle),
-          possibleEnPassantX(other.possibleEnPassantX), possibleEnPassantY(other.possibleEnPassantY),
-          capturedPiece(std::move(other.capturedPiece)), isLegal(other.isLegal), isEnPassant(other.isEnPassant), kingHasMoved(other.kingHasMoved), rookHasMoved(other.rookHasMoved) {
+        : x(other.x), y(other.y), newX(other.newX), newY(other.newY),
+          isLegal(other.isLegal), isPromotion(other.isPromotion), promotionChoice(other.promotionChoice), givesCheck(other.givesCheck), kingSideCastle(other.kingSideCastle), queenSideCastle(other.queenSideCastle), 
+          possibleEnPassantX(other.possibleEnPassantX), possibleEnPassantY(other.possibleEnPassantY), isEnPassant(other.isEnPassant), kingHasMoved(other.kingHasMoved)
+          , rookHasMoved(other.rookHasMoved), pawnHasMoved(other.pawnHasMoved), capturedPiece(std::move(other.capturedPiece)) {
         // Reset the moved-from object
         other.x = 0;
         other.y = 0;
         other.newX = 0;
             
         other.newY = 0;
-        other.promotionChoice = '0';
+        other.isLegal = false; //For some reason this line is not inside, very weird can't remember why I did this, but it was probably for a reason This is a 
+        other.isPromotion = false;          
+        other.promotionChoice = '\0';
+        other.givesCheck = false;
         other.kingSideCastle = false;
         other.queenSideCastle = false;
         other.possibleEnPassantX = -1;
         other.possibleEnPassantY = -1;
         other.capturedPiece = nullptr;
+        other.isEnPassant = false;
         other.kingHasMoved = false;
         other.rookHasMoved = false;
-        other.isEnPassant = false;
+        other.pawnHasMoved = false;
     }
     
     move& operator=(move&& other) noexcept{
@@ -70,32 +80,38 @@ struct move {
             y = other.y;
             newX = other.newX;
             newY = other.newY;
+            isLegal = other.isLegal;
+            isPromotion = other.isPromotion;
             promotionChoice = other.promotionChoice;
+            givesCheck = other.givesCheck;
             kingSideCastle = other.kingSideCastle;
             queenSideCastle = other.queenSideCastle;
             possibleEnPassantX = other.possibleEnPassantX;
             possibleEnPassantY = other.possibleEnPassantY;
             capturedPiece = std::move(other.capturedPiece);
-            isLegal = other.isLegal;
             isEnPassant = other.isEnPassant;
             kingHasMoved = other.kingHasMoved;
             rookHasMoved = other.rookHasMoved;
+            pawnHasMoved = other.pawnHasMoved;
 
             // Reset the moved-from object
             other.x = 0;
             other.y = 0;
             other.newX = 0;
             other.newY = 0;
-            other.promotionChoice = '0';
+            other.isLegal = false;
+            other.isPromotion = false;
+            other.promotionChoice = '\0';
+            other.givesCheck = false;
             other.kingSideCastle = false;
             other.queenSideCastle = false;
             other.possibleEnPassantX = -1;
             other.possibleEnPassantY = -1;
             other.capturedPiece = nullptr;
-            other.isLegal = false;
             other.isEnPassant = false;
             other.kingHasMoved = false;
             other.rookHasMoved = false;
+            other.pawnHasMoved = false;
         }
         return *this;
     }

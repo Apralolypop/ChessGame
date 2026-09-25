@@ -681,54 +681,9 @@ void makeMove(move &m, bool WhitesTurn) {
         }
 
         if((board[m.newX][m.newY]->type == 'P') && board[m.newX][m.newY]->isWhite && m.newX == 7) {
-            char promotionChoice = 'Q';
-            if (promotionChoiceProvider) {
-                promotionChoice = promotionChoiceProvider(true);
-            } else {
-                std::cout << "White pawn promoted!" << std::endl;
-                std::cout << "Choose a piece for promotion (Q, R, B, N): ";
-                std::cin >> promotionChoice;
-            }
-
-            // Promote to the chosen piece
-            if (promotionChoice == 'Q') {
-                board[m.newX][m.newY] = std::make_unique<Queen>(true);
-            } else if (promotionChoice == 'R') {
-                board[m.newX][m.newY] = std::make_unique<Rook>(true);
-            } else if (promotionChoice == 'B') {
-                board[m.newX][m.newY] = std::make_unique<Bishop>(true);
-            } else if (promotionChoice == 'N') {
-                board[m.newX][m.newY] = std::make_unique<Knight>(true);
-            } else {
-                if (VERBOSE) std::cout << "Invalid choice! Promoting to Queen by default." << std::endl;
-                board[m.newX][m.newY] = std::make_unique<Queen>(true);
-            }
-
-            m.promotionChoice = promotionChoice; // Store the promotion choice in the move object
+            m.isPromotion = true;
         } else if((board[m.newX][m.newY]->type == 'P') && !board[m.newX][m.newY]->isWhite && m.newX == 0) {
-            char promotionChoice = 'Q';
-            if (promotionChoiceProvider) {
-                promotionChoice = promotionChoiceProvider(false);
-            } else {
-                std::cout << "Black pawn promoted!" << std::endl;
-                std::cout << "Choose a piece for promotion (Q, R, B, N): ";
-                std::cin >> promotionChoice;
-            }
-
-            // Promote to the chosen piece
-            if (promotionChoice == 'Q') {
-                board[m.newX][m.newY] = std::make_unique<Queen>(false);
-            } else if (promotionChoice == 'R') {
-                board[m.newX][m.newY] = std::make_unique<Rook>(false);
-            } else if (promotionChoice == 'B') {
-                board[m.newX][m.newY] = std::make_unique<Bishop>(false);
-            } else if (promotionChoice == 'N') {
-                board[m.newX][m.newY] = std::make_unique<Knight>(false);
-            } else {
-                board[m.newX][m.newY] = std::make_unique<Queen>(false);
-            }
-
-            m.promotionChoice = promotionChoice; // Store the promotion choice in the move object
+            m.isPromotion = true;
         }
 
         m.isLegal = true;
@@ -783,7 +738,7 @@ void undoMove(move &m, bool WhitesTurn) {
         board[m.possibleEnPassantX][m.possibleEnPassantY]->isAlive = true;
     }
 
-    if(m.promotionChoice != '\0') {
+    if(m.isPromotion) {
         // Undo the promotion by replacing the promoted piece with a pawn
         if (WhitesTurn) {
             board[m.x][m.y] = std::make_unique<Pawn>(true);

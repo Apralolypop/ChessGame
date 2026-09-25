@@ -560,12 +560,12 @@ std::vector<std::vector<int>> getAllLegalMoves(int x, int y, bool WhitesTurn) {
     if (!board[x][y] || !board[x][y]->isAlive || board[x][y]->isWhite != WhitesTurn) {
         return results;
     }
-    for (int i = 0; i < 8; i++) {
-        for (int j = 0; j < 8; j++) {
-            if (i == x && j == y) continue;
-            if (checkLegal(x, y, i, j) != 0) {
-                results.push_back({i, j});
-            }
+    results = board[x][y]->LegalMoves(x, y);
+    for(auto it = results.begin(); it != results.end();) {
+        if(!checkLegal(x, y, (*it)[0], (*it)[1])) {
+            it = results.erase(it);
+        } else {
+            ++it;
         }
     }
     return results;
@@ -609,6 +609,36 @@ bool hasAnyLegalMove(bool isWhite) {
 /*
 Very important for engine
 */
+
+void classifyMove(move &m) {
+    if (board[m.x][m.y] && board[m.x][m.y]->isAlive) {
+        int returnValue = checkLegal(m.x, m.y, m.newX, m.newY);
+        if (returnValue == 0) {
+            m.isLegal = false;
+            return;
+        }
+        if (returnValue == 1) {
+            if (board[m.newX][m.newY] && board[m.newX][m.newY]->isAlive) {
+                if (board[m.newX][m.newY]->isWhite != board[m.x][m.y]->isWhite) {
+                    m.capturedPiece = std::move(board[m.newX][m.newY]); // Capture the piece
+                } else {
+                    m.isLegal = false;
+                    return;
+                }
+            }
+        }
+        if (returnValue == 2) {
+            if (m.newY == 6) { // Kingside castling
+                m.kingSideCastle = true;
+            } else if (m.newY == 2) { // Queenside castling
+                m.queenSideCastle = true;
+            }
+        }
+        m.isLegal = true;
+    } else {
+        m.isLegal = false;
+    }
+}
 
 void makeMove(move &m, bool WhitesTurn) {
     if (board[m.x][m.y] && board[m.x][m.y]->isAlive && board[m.x][m.y]->isWhite == WhitesTurn) {

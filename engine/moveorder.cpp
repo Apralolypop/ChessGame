@@ -9,11 +9,15 @@ Checks
 */
 
 
-int reorderMoves(std::vector<int>& moves, bool isMaximizingPlayer) { 
-    int moveCount = 0;
-    
+int reorderMoves(std::vector<std::vector<int>>& moves, bool isMaximizingPlayer) { 
+    int moveCount = 0; 
+  
     for(auto a = moves.begin(); a != moves.end(); a++) {
         // check what type of moves it is
+        int x = (*a)[0];
+        int y = (*a)[1];
+        
+
     }
 
     return moveCount;

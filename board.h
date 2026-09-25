@@ -149,8 +149,10 @@ std::vector<std::vector<int>> getAllLegalMovesForColor(bool isWhite);
 bool isKingInCheck(bool isWhite);
 bool hasAnyLegalMove(bool isWhite);
 
+void classifyMove(move &m, bool WhitesTurn); 
 void makeMove(move &m, bool WhitesTurn); 
 void undoMove(move &m, bool WhitesTurn);
+
 
 // Combines the two checks above into the four states a GUI cares about.
 GameState getGameState(bool WhitesTurn);

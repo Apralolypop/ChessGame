@@ -562,7 +562,7 @@ std::vector<std::vector<int>> getAllLegalMoves(int x, int y, bool WhitesTurn) {
     }
     results = board[x][y]->LegalMoves(x, y);
     for(auto it = results.begin(); it != results.end();) {
-        if(!checkLegal(x, y, (*it)[0], (*it)[1])) {
+        if(!checkLegal(x, y, (*it)[0], (*it)[1])) { //filters fake pseudo legal moves
             it = results.erase(it);
         } else {
             ++it;
@@ -610,7 +610,7 @@ bool hasAnyLegalMove(bool isWhite) {
 Very important for engine
 */
 
-void classifyMove(move &m) {
+void classifyMove(move &m) { //Gotta Make this and Makemove into something that works
     if (board[m.x][m.y] && board[m.x][m.y]->isAlive) {
         int returnValue = checkLegal(m.x, m.y, m.newX, m.newY);
         if (returnValue == 0) {
